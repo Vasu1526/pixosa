@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Pixosa</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f4f4f4;
+    }
+    .canvas-container {
+      margin-top: 20px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+    }
+    .controls label {
+      margin-top: 10px;
+    }
+    .btn {
+      margin-top: 20px;
+      width: 100%;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container upload-container">
+    <div class="row">
+      <div class="col-md-4">
+        <label for="templateImage" class="mt-3">Select Template Image:</label>
+        <input type="file" id="templateImage" accept="image/*" class="form-control">
+
+        <label for="profileImage" class="mt-3">Select Profile Image:</label>
+        <input type="file" id="profileImage" accept="image/*" class="form-control">
+
+        <label for="userName" class="mt-3">Enter Name:</label>
+        <input type="text" id="userName" placeholder="Your name" class="form-control">
+
+        <label for="centerX" class="mt-3">Center X:</label>
+        <input type="number" id="centerX" value="210" class="form-control">
+
+        <label for="centerY" class="mt-3">Center Y:</label>
+        <input type="number" id="centerY" value="525" class="form-control">
+
+        <label for="radius" class="mt-3">Radius:</label>
+        <input type="number" id="radius" value="127" class="form-control">
+
+        <label for="textOffset" class="mt-3">Text Offset:</label>
+        <input type="number" id="textOffset" value="40" class="form-control">
+
+        <button class="btn btn-primary" onclick="generateImage()">Generate on Canvas</button>
+        <button class="btn btn-success" onclick="DownloadImage()">Download Image</button>
+      </div>
+
+      <div class="col-md-8 d-flex align-items-center" style="padding-left: 20px;">
+        <div class="canvas-container w-100 mt-4">
+          <canvas id="canvas" width="745" height="744"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // // Redirect to /admin?=1526 if accessed directly as admin.html
+    // (function() {
+    //   const path = window.location.pathname;
+    //   if (path.match(/admin\.html$/i)) {
+    //     window.location.replace('/admin?=1526' + window.location.search + window.location.hash);
+    //   }
+    // })();
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const imageInput = document.getElementById('profileImage');
+    const templateInput = document.getElementById('templateImage');
+
+    let uploadedImageData = null;
+    let templateImageData = null;
+
+    templateInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          templateImageData = e.target.result;
+          generateImage();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        templateImageData = null;
+        generateImage();
+      }
+    });
+
+    imageInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          uploadedImageData = e.target.result;
+          generateImage();
+        };
+        reader.readAsDataURL(file);
+      } else {
+        uploadedImageData = null;
+        generateImage();
+      }
+    });
+
+    function generateImage(hideRadius = false) {
+      const centerX = parseInt(document.getElementById('centerX').value);
+      const centerY = parseInt(document.getElementById('centerY').value);
+      const radius = parseInt(document.getElementById('radius').value);
+      const textOffset = parseInt(document.getElementById('textOffset').value);
+      const userName = document.getElementById('userName').value;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (templateImageData) {
+        const bgImg = new Image();
+        bgImg.onload = function () {
+          ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+          drawOverlay();
+        };
+        bgImg.src = templateImageData;
+      } else {
+        drawOverlay();
+      }
+
+      function drawOverlay() {
+        drawCenterDot(centerX, centerY);
+        if (!hideRadius) drawRadiusCircle(centerX, centerY, radius);
+
+        if (!uploadedImageData) {
+          drawNameOnly();
+          return;
+        }
+
+        const profileImg = new Image();
+        profileImg.onload = function () {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(profileImg, centerX - radius, centerY - radius, radius * 2, radius * 2);
+          ctx.restore();
+          drawNameOnly();
+        };
+        profileImg.src = uploadedImageData;
+      }
+
+      function drawNameOnly() {
+        ctx.font = 'bold 28px Arial';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText(userName, centerX, centerY + radius + textOffset);
+      }
+    }
+
+    function drawCenterDot(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = 'limegreen';
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function drawRadiusCircle(x, y, r) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    ['centerX', 'centerY', 'radius', 'textOffset', 'userName'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => generateImage(false));
+    });
+
+    window.addEventListener('DOMContentLoaded', () => generateImage(false));
+
+    function DownloadImage() {
+      generateImage(true);
+      setTimeout(() => {
+        const userName = document.getElementById('userName').value.trim() || 'canvas-image';
+        const link = document.createElement('a');
+        link.download = userName + '.jpg';
+        link.href = canvas.toDataURL('image/jpeg');
+        link.click();
+        generateImage(false);
+      }, 100);
+    }
+  </script>
+
+
+</body>
+</html>
