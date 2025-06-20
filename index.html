@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -203,5 +203,197 @@
   </script>
 
 
+</body>
+</html>
+ -->
+
+
+
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Your Image</title>
+  <link rel="icon" type="image/png" href="https://i.ibb.co/KpTbdDvf/color-wheel.png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      padding: 32px 0;
+    }
+    .canvas-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      background-image: url('https://i.ibb.co/1tW6rd85/template.jpg');
+      background-size: cover;
+      background-position: center;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+    }
+    .form-label {
+      font-weight: 500;
+      margin-bottom: 4px;
+      text-align: left;
+      display: block;
+    }
+    .form-control, .btn {
+      font-size: 1.1rem;
+    }
+    .btn {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      display: block;
+    }
+    .input-wrapper {
+      max-width: 400px;
+      margin: 0 auto 16px auto;
+      text-align: left;
+    }
+    @media (max-width: 900px) {
+      .row {
+        flex-direction: column;
+      }
+      .col-md-6 {
+        max-width: 100%;
+        flex: 0 0 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="row justify-content-center align-items-start">
+      <div class="col-md-6">
+        <h2 class="mb-3 text-center mb-3" style="font-weight:bold">સમસ્ત ટીકર ગામ</h2>
+        <hr>
+        <h5 class="mb-5 text-center">Upload Profile Image and Name</h5>
+
+        <div class="mb-3 text-start">
+          <label for="profileImage" class="form-label">Profile Image</label>
+          <input type="file" id="profileImage" accept="image/*" class="form-control">
+        </div>
+        <div class="mb-4 text-start">
+          <label for="userName" class="form-label">Your Name</label>
+          <input type="text" id="userName" placeholder="Enter Your Name" class="form-control">
+        </div>
+        <button onclick="downloadImage()" class="btn btn-primary mt-2">Download PNG</button>
+      </div>
+
+      <div class="col-md-6">
+        <div class="canvas-container mt-5 mt-md-0">
+          <canvas id="canvas" width="745" height="744"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Change only the hash part of the URL to a random 10-character string on load
+    (function() {
+      const randomStr = Math.random().toString(36).substring(2, 12);
+      if (window.location.hash !== `#${randomStr}`) {
+        window.location.hash = randomStr;
+      }
+    })();
+
+    let uploadedImageData = null;
+
+    document.getElementById('profileImage').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) {
+        uploadedImageData = null;
+        generateImage();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        uploadedImageData = e.target.result;
+        generateImage();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('userName').addEventListener('input', generateImage);
+
+    function generateImage() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      const userName = document.getElementById('userName').value;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const bgImage = new Image();
+      bgImage.src = 'template.jpg';
+      bgImage.onload = function() {
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+        const centerX = 210;
+        const centerY = 524;
+        const radius = 130;
+        const diameter = radius * 2;
+
+        if (uploadedImageData) {
+          const profileImg = new Image();
+          profileImg.onload = function() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+
+            const aspectRatio = profileImg.width / profileImg.height;
+            let srcX = 0, srcY = 0, srcWidth = profileImg.width, srcHeight = profileImg.height;
+
+            if (aspectRatio > 1) {
+              srcWidth = profileImg.height;
+              srcX = (profileImg.width - srcWidth) / 2;
+            } else {
+              srcHeight = profileImg.width;
+              srcY = (profileImg.height - srcHeight) / 2;
+            }
+
+            ctx.drawImage(profileImg, srcX, srcY, srcWidth, srcHeight,
+              centerX - radius, centerY - radius, diameter, diameter);
+            ctx.restore();
+
+            ctx.font = 'bold 28px Arial';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText(userName, centerX, centerY + radius + 42);
+          };
+          profileImg.src = uploadedImageData;
+        } else {
+          ctx.font = 'bold 28px Arial';
+          ctx.fillStyle = '#fff';
+          ctx.textAlign = 'center';
+          ctx.fillText(userName, centerX, centerY + radius + 42);
+        }
+      };
+    }
+
+    window.addEventListener('DOMContentLoaded', generateImage);
+
+    function downloadImage() {
+      const canvas = document.getElementById('canvas');
+      const userName = document.getElementById('userName').value || 'template-image';
+      const link = document.createElement('a');
+      link.download = `${userName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
 </body>
 </html>
