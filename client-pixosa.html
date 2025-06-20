@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Create Your Image</title>
-  <link rel="icon" type="image/png" href="https://i.ibb.co/KpTbdDvf/color-wheel.png">
+  <link rel="icon" type="image/png" href="https://i.ibb.co/KpTbdDv/color-wheel.png">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     body {
@@ -20,9 +20,7 @@
     }
     canvas {
       border: 1px solid #ccc;
-      background-image: url('https://i.ibb.co/1tW6rd85/template.jpg');
-      background-size: cover;
-      background-position: center;
+      background-color: #fff;
       border-radius: 12px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       width: 100%;
@@ -65,7 +63,7 @@
   <div class="container">
     <div class="row justify-content-center align-items-start">
       <div class="col-md-6">
-        <h2 class="mb-3 text-center mb-3" style="font-weight:bold">સમસ્ત ટીકર ગામ</h2>
+        <h2 class="mb-3 text-center" style="font-weight:bold">સમસ્ત ટીકર ગામ</h2>
         <hr>
         <h5 class="mb-5 text-center">Upload Profile Image and Name</h5>
 
@@ -77,7 +75,7 @@
           <label for="userName" class="form-label">Your Name</label>
           <input type="text" id="userName" placeholder="Enter Your Name" class="form-control">
         </div>
-        <button onclick="downloadImage()" class="btn btn-primary mt-2">Download PNG</button>
+        <button onclick="downloadImage()" class="btn btn-primary mt-2" id="downloadBtn">Download PNG</button>
       </div>
 
       <div class="col-md-6">
@@ -89,17 +87,18 @@
   </div>
 
   <script>
-    // Hide index.html in URL and show random 10 chars
-    // (function() {
-    //   const path = window.location.pathname;
-    //   if (path.match(/index\.html$/i)) {
-    //     const randomStr = Math.random().toString(36).substring(2, 12);
-    //     const newPath = path.replace(/index\.html$/i, randomStr);
-    //     window.history.replaceState({}, '', newPath + window.location.search + window.location.hash);
-    //   }
-    // })();
-
     let uploadedImageData = null;
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const bgImage = new Image();
+    bgImage.crossOrigin = 'anonymous';
+    bgImage.src = 'https://i.ibb.co/1tW6rd85/template.jpg';
+
+    bgImage.onload = function () {
+      generateImage(); // Initial render when background loads
+    };
 
     document.getElementById('profileImage').addEventListener('change', function () {
       const file = this.files[0];
@@ -119,71 +118,67 @@
     document.getElementById('userName').addEventListener('input', generateImage);
 
     function generateImage() {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      const userName = document.getElementById('userName').value;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-      const bgImage = new Image();
-      bgImage.src = 'https://i.ibb.co/1tW6rd85/template.jpg';
-      bgImage.onload = function() {
-        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      const centerX = 210;
+      const centerY = 524;
+      const radius = 130;
+      const diameter = radius * 2;
 
-        const centerX = 210;
-        const centerY = 524;
-        const radius = 130;
-        const diameter = radius * 2;
+      if (uploadedImageData) {
+        const profileImg = new Image();
+        profileImg.crossOrigin = 'anonymous';
+        profileImg.onload = function () {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
 
-        if (uploadedImageData) {
-          const profileImg = new Image();
-          profileImg.onload = function() {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
+          const aspectRatio = profileImg.width / profileImg.height;
+          let srcX = 0, srcY = 0, srcWidth = profileImg.width, srcHeight = profileImg.height;
 
-            const aspectRatio = profileImg.width / profileImg.height;
-            let srcX = 0, srcY = 0, srcWidth = profileImg.width, srcHeight = profileImg.height;
+          if (aspectRatio > 1) {
+            srcWidth = profileImg.height;
+            srcX = (profileImg.width - srcWidth) / 2;
+          } else {
+            srcHeight = profileImg.width;
+            srcY = (profileImg.height - srcHeight) / 2;
+          }
 
-            if (aspectRatio > 1) {
-              srcWidth = profileImg.height;
-              srcX = (profileImg.width - srcWidth) / 2;
-            } else {
-              srcHeight = profileImg.width;
-              srcY = (profileImg.height - srcHeight) / 2;
-            }
+          ctx.drawImage(profileImg, srcX, srcY, srcWidth, srcHeight,
+            centerX - radius, centerY - radius, diameter, diameter);
+          ctx.restore();
 
-            ctx.drawImage(profileImg, srcX, srcY, srcWidth, srcHeight,
-              centerX - radius, centerY - radius, diameter, diameter);
-            ctx.restore();
-
-            ctx.font = 'bold 28px Arial';
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = 'center';
-            ctx.fillText(userName, centerX, centerY + radius + 42);
-          };
-          profileImg.src = uploadedImageData;
-        } else {
-          ctx.font = 'bold 28px Arial';
-          ctx.fillStyle = '#fff';
-          ctx.textAlign = 'center';
-          ctx.fillText(userName, centerX, centerY + radius + 42);
-        }
-      };
+          drawName();
+        };
+        profileImg.src = uploadedImageData;
+      } else {
+        drawName();
+      }
     }
 
-    window.addEventListener('DOMContentLoaded', generateImage);
+    function drawName() {
+      const userName = document.getElementById('userName').value;
+      ctx.font = 'bold 28px Arial';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(userName, 210, 524 + 130 + 42);
+    }
 
     function downloadImage() {
-      const canvas = document.getElementById('canvas');
-      const userName = document.getElementById('userName').value || 'template-image';
+      const userName = document.getElementById('userName').value.trim() || 'template-image';
       const link = document.createElement('a');
       link.download = `${userName}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     }
+
+    // Ensure background loads before enabling download
+    window.addEventListener('load', () => {
+      generateImage();
+    });
   </script>
 </body>
 </html>
